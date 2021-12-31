@@ -1,0 +1,74 @@
+# https://blog.logrocket.com/containerized-development-nestjs-docker/
+
+version: '3.8'
+services:
+  dev:
+    container_name: dev
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    restart: always
+    command: yarn start:dev
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}
+      - 9229:9229
+    env_file:
+      - .env
+    networks:
+      - webnet
+    depends_on:
+      - postgres
+      - mongodb
+      - redis
+
+  # after install new dependecy, need to run command below to install
+  # the packaged in the container. `dev` is the service name
+  # `docker compose exec dev yarn`
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    networks:
+      - webnet
+  mongodb:
+    container_name: mongodb
+    image: mongo
+    volumes:
+      - mongodata:/data/db
+    env_file:
+      - .env
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
+    networks:
+      - webnet
+  redis:
+    container_name: redis
+    image: redis:alpine
+    ports:
+      - 6379:6379
+    networks:
+      - webnet
+
+networks:
+  webnet:
+
+volumes:
+  pgdata:
+  mongodata:
